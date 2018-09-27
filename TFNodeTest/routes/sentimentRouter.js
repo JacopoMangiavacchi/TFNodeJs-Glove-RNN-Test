@@ -14,7 +14,7 @@ router.get('/:text', async function(req, res, next) {
 
 router.post('/', async function(req, res, next){
   console.log(req.body);      
-  res.json({'sentiment' : await model.predict(req.body.text) });
+  res.json(await model.predict(req.body.text));
 });
 
 module.exports = router;

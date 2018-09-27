@@ -54,8 +54,16 @@ module.exports = class SentimentModel {
     paddedTensor.print();
 
     const prediction = await this.model.predict(paddedTensor);
-    prediction.print()
+    
+    const values = prediction.dataSync();
+    const arr = Array.from(values);
+    console.log(values);
+    console.log(arr);
 
-    return prediction.toString();
+    return {
+      'sentiment' : arr[0] > arr[1] ? "negative" : "positive",
+      'negative' : arr[0],
+      'positive' : arr[1],
+    };
   }
 }
