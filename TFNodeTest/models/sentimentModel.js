@@ -3,14 +3,19 @@
 const tf = require('@tensorflow/tfjs');
 require('@tensorflow/tfjs-node');
 
+const fs = require('fs');
+
+
 module.exports = class SentimentModel {
   async prepareModel() {
     console.log('Loading Tensorflow model...');
     this.model = await tf.loadModel('file://../Python/tfjsmodel/model.json');
 
     console.log('Loading word mappings...');
-    this.words = await fetch('data/words.json')
-      .then(res => res.json());
+
+
+    let rawdata = fs.readFileSync('../Python/words.json');  
+    this.words = JSON.parse(rawdata);
   }
 
   cleanText(text) {
@@ -41,30 +46,16 @@ module.exports = class SentimentModel {
     return t.pad([[length - t.shape[0], 0]]);
   }
 
-  async createLyric(textSeed, textLength, randomness) {
-    randomness = parseFloat(randomness);
-    if (!this.words || !this.model) return '';
+  async predict(text) {
+    const tokenVector = this.textToVec(text);
+    console.log('Token vector', tokenVector);
 
-    let textOutput = textSeed;
-    console.log(`Generating lyric from "${textSeed}" with randomness ${randomness}...`);
+    const paddedTensor = this.padVector(tokenVector, 50).reshape([1, 50]); // Sync with Python training
+    paddedTensor.print();
 
-    while (textOutput.length < textLength) {
-      const tokenVector = this.textToVec(textOutput);
-      if (this.debug) console.log('Token vector', tokenVector);
+    const prediction = await this.model.predict(paddedTensor);
+    prediction.print()
 
-      const paddedTensor = this.padVector(tokenVector, 14).reshape([1, 14]); // TODO
-      if (this.debug) paddedTensor.print();
-
-      const prediction = await this.model.predict(paddedTensor);
-      if (this.debug) prediction.print()
-
-      // The prediction is a 2D of potentially multiple predictions.
-      // Squeeze removes one of the dimensions to make it nicer to work with :-)
-      const index = await softmaxSample(prediction.squeeze(), randomness);
-      const word = this.reverseWords[index[0]];
-      textOutput += ' ' + word;
-    }
-
-    return textOutput;
+    return prediction.toString();
   }
 }
