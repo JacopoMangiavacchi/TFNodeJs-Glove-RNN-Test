@@ -1,21 +1,16 @@
+'use strict';
+
 const tf = require('@tensorflow/tfjs');
 require('@tensorflow/tfjs-node');
 
-class LyricsGenerator {
-  async prepareGenerator(logger) {
-    logger('Loading Tensorflow model...');
-    this.model = await tf.loadModel('data/model.json');
+module.exports = class SentimentModel {
+  async prepareModel() {
+    console.log('Loading Tensorflow model...');
+    this.model = await tf.loadModel('file://../Python/tfjsmodel/model.json');
 
-    logger('Loading word mappings...');
+    console.log('Loading word mappings...');
     this.words = await fetch('data/words.json')
       .then(res => res.json());
-
-    logger('Creating an inverse word lookup table...');
-    this.reverseWords = Object.keys(this.words).reduce((obj, word) => {
-      const index = this.words[word];
-      obj[index] = word;
-      return obj;
-    }, {});
   }
 
   cleanText(text) {
@@ -73,15 +68,3 @@ class LyricsGenerator {
     return textOutput;
   }
 }
-
-
-var express = require('express');
-var router = express.Router();
-
-router.get('/', async function(req, res, next) {
-  const generator = new LyricsGenerator();
-  await generator.prepareGenerator(console.log);
-  res.json({'resp' : 1 });
-});
-
-module.exports = router;
